@@ -63,6 +63,21 @@ bun run serve          # HTTP endpoint on SUMMARIZE_PORT (default 3003)
 
 Send `/summarize https://www.paulgraham.com/greatwork.html` to the bot, or just paste the URL in the chat. The bot shows a typing indicator while it fetches the page and asks the AI, then replies with the page title and the summary. `/latest` summarizes the latest 3 Paul Graham essays — the demo the original workflow was built for.
 
+## Commands
+
+All commands are in English. Replies are bilingual — English by default, Indonesian when you pick it with `/language`.
+
+| Command | What it does |
+| :------ | :----------- |
+| `/start` | Introduction and main menu |
+| `/summarize <url>` | Summarize a webpage URL (example: `/summarize https://www.paulgraham.com/greatwork.html`) |
+| `/latest` | Summarize the latest 3 Paul Graham essays |
+| `/language` | Switch language (English / Indonesia) |
+| `/forget` | Erase my recent summaries |
+| `/help` | Full help and command list |
+
+Any other text — a bare URL pasted in the chat — is summarized the same way.
+
 ## HTTP Endpoint
 
 The same summary is available over HTTP — no Telegram needed:
