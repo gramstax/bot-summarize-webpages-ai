@@ -99,7 +99,17 @@
     → mock. Reasoning params (`reasoning_effort`) are sent ONLY to
     reasoning models (o1/o3/o4) and only when configured; `temperature`
     is omitted for reasoning models — never break generic
-    OpenAI-compatible providers.
+    OpenAI-compatible providers. **Rate-limit retry (added
+    2026-11-19 for this bot):** `OpenAIClient.chat` retries 402/429
+    up to 3 times, waiting the provider's "Retry after Ns" (default
+    45 s, cap 60 s). Pollinations' anonymous tier allows ~1 reply
+    per 45 s per IP even for `openai-fast`, and this bot makes
+    several calls per page — without the retry a long page could
+    never finish on the free tier (verified live 2026-11-19: calls
+    4–6 of a 7-call run failed 402 FREE_LIMIT, then recovered after
+    the wait). The retry is covered by unit tests in
+    `test/openai.test.ts` (with "Retry after 0s" so the suite stays
+    fast).
 12. **ALWAYS check the Mermaid flow in README.md** (Damar,
     2026-11-19 ~16:13 WIB): render/validate until 0 errors before
     commit/push. See rule 6d for the GitHub-vs-local trap.

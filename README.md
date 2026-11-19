@@ -144,6 +144,8 @@ Copy `.env.example` to `.env`:
 
 Any OpenAI-compatible API works. A free one that needs no key is [Pollinations](https://pollinations.ai): set `OPENAI_BASE_URL=https://text.pollinations.ai/openai` and `OPENAI_MODEL=openai-fast` (the `openai` model often rate-limits with 402 FREE_LIMIT, one reply per 45 seconds per IP; `openai-fast` is the reliable one). With a custom base URL and no key, the bot runs live instead of falling back to mock mode — the mock only applies when the base URL is the OpenAI default and no key is set.
 
+One honest limit of the free tier: it allows about 1 reply every 45 seconds per IP, and this bot makes several model calls per page (one per 6000-character chunk, plus one to combine them). When the provider answers 402/429, the bot waits out the limit and retries automatically (up to 3 retries per call), so a long page on the free tier can take a few minutes instead of failing. With a paid key there is no such wait.
+
 ### SSRF guard
 
 Before fetching, the URL is validated: only `http:`/`https:` schemes, and the hostname must not be localhost, a private/reserved range, or a `.local` name. The hostname is also DNS-resolved and the result re-checked against private ranges, so a public-looking name cannot smuggle a private address. Blocked URLs are refused with an honest message — the bot never summarizes a page it did not fetch.

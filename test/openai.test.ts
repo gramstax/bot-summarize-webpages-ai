@@ -160,6 +160,71 @@ describe(`AppConfig.load`, () => {
   })
 })
 
+describe(`OpenAIClient.retryAfterMs`, () => {
+  const res = (header?: string) =>
+    new Response(``, {status: 402, headers: header === undefined ? {} : {"retry-after": header}})
+
+  it(`parses "Retry after Ns" from the body first`, () => {
+    expect(OpenAIClient.retryAfterMs(res(`120`), `Free limit reached: Retry after 41s`)).toBe(41_000)
+  })
+
+  it(`falls back to the retry-after header`, () => {
+    expect(OpenAIClient.retryAfterMs(res(`30`), `something else`)).toBe(30_000)
+  })
+
+  it(`falls back to the default when neither is present`, () => {
+    expect(OpenAIClient.retryAfterMs(res(), `something else`)).toBe(OpenAIClient.DEFAULT_RATE_LIMIT_WAIT_MS)
+  })
+
+  it(`caps the wait at the maximum`, () => {
+    expect(OpenAIClient.retryAfterMs(res(), `Retry after 120s`)).toBe(OpenAIClient.MAX_RATE_LIMIT_WAIT_MS)
+  })
+})
+
+describe(`OpenAIClient.chat rate-limit retry`, () => {
+  afterEach(() => {
+    OpenAIClient.fetchFn = fetch
+  })
+
+  const messages: IChatMessage[] = [{role: `user`, content: `hello`}]
+  const okBody = {choices: [{message: {role: `assistant`, content: `hi`}}]}
+  const limitBody = {status: 402, error: {message: `Free limit reached: Retry after 0s`}}
+
+  it(`retries a 402 once and succeeds`, async () => {
+    let calls = 0
+    OpenAIClient.fetchFn = (async (_url: string | URL | Request, _init?: RequestInit) => {
+      calls++
+      if (calls === 1) {
+        return new Response(JSON.stringify(limitBody), {status: 402, headers: {"Content-Type": `application/json`}})
+      }
+      return new Response(JSON.stringify(okBody), {status: 200, headers: {"Content-Type": `application/json`}})
+    }) as typeof fetch
+    const {message} = await OpenAIClient.chat(``, `openai-fast`, messages, [], POLLINATIONS)
+    expect(message.content).toBe(`hi`)
+    expect(calls).toBe(2)
+  })
+
+  it(`throws after exhausting retries on a persistent 402`, async () => {
+    let calls = 0
+    OpenAIClient.fetchFn = (async (_url: string | URL | Request, _init?: RequestInit) => {
+      calls++
+      return new Response(JSON.stringify(limitBody), {status: 402, headers: {"Content-Type": `application/json`}})
+    }) as typeof fetch
+    await expect(OpenAIClient.chat(``, `openai-fast`, messages, [], POLLINATIONS)).rejects.toThrow(`AI chat 402`)
+    expect(calls).toBe(OpenAIClient.MAX_RATE_LIMIT_RETRIES + 1)
+  })
+
+  it(`does not retry a 400`, async () => {
+    let calls = 0
+    OpenAIClient.fetchFn = (async (_url: string | URL | Request, _init?: RequestInit) => {
+      calls++
+      return new Response(JSON.stringify({error: `bad request`}), {status: 400, headers: {"Content-Type": `application/json`}})
+    }) as typeof fetch
+    await expect(OpenAIClient.chat(``, `openai-fast`, messages, [], POLLINATIONS)).rejects.toThrow(`AI chat 400`)
+    expect(calls).toBe(1)
+  })
+})
+
 describe(`OpenAIClient reasoning models`, () => {
   const messages: {role: `user`; content: string}[] = [{role: `user`, content: `hi`}]
   const stub = (body: unknown, ok = true, status = 200) => {
