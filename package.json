@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "@gramstax/lmdb": "6.1.0",
+    "gramstax": "6.1.0"
+  },
+  "description": "Summarize any webpage with AI \u2014 paste a URL, get a clear summary, built with Gramstax + TypeScript + Bun",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "license": "MIT",
+  "name": "bot-summarize-webpages-ai",
+  "peerDependencies": {
+    "typescript": "7.0.2"
+  },
+  "private": true,
+  "scripts": {
+    "build:gramstax": "gramstax build",
+    "dev": "gramstax start --watch",
+    "serve": "bun run src/server.ts",
+    "start": "gramstax start",
+    "test": "bun test test/",
+    "test:all": "bun run test:e2e:check && bun test test/ e2e/",
+    "test:e2e": "bun test e2e/",
+    "test:e2e:check": "bun run scripts/check-e2e-mirror.ts --path . && bun run scripts/check-e2e-handlers.ts --path .",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}
